@@ -16,6 +16,5 @@ variable. For the sake of the exercise you can use a text based comma separated 
 configured using an environment variable. For the sake of the exercise you must not use any
 open source libraries that implement this (including the built-in `golang.org/x/time/rate`
 package). When the rate limit is hit you must return 429 HTTP status code.
-7. The service should be delivered in production-grade quality (logging, metrics, easy-read code...)
-
+7. The service should be delivered in production-grade quality.
 
