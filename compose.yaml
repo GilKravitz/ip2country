@@ -1,0 +1,16 @@
+services:
+  ip2country:
+    build: .
+    image: ip2country:local
+    ports:
+      - "8080:8080"
+    environment:
+      IP2COUNTRY_DB: csv
+      IP2COUNTRY_CSV_PATH: /data/sample.csv
+      RATE_LIMIT_RPS: "100"
+      LOG_LEVEL: info
+    restart: unless-stopped
+    # To use your own dataset instead of the baked sample, mount it and repoint
+    # IP2COUNTRY_CSV_PATH above:
+    # volumes:
+    #   - ./mydata.csv:/data/mydata.csv:ro
