@@ -25,11 +25,11 @@ func (fakeStore) Lookup(addr netip.Addr) (geoip.Location, error) {
 	return geoip.Location{}, geoip.ErrNotFound
 }
 
-func newServer(rps float64) http.Handler {
+func newServer(rps int) http.Handler {
 	return Handler(deps(rps))
 }
 
-func deps(rps float64) Deps {
+func deps(rps int) Deps {
 	return Deps{
 		Store:   fakeStore{},
 		Limiter: ratelimit.New(rps),
@@ -83,7 +83,7 @@ func TestFindCountry(t *testing.T) {
 }
 
 func TestRateLimit429(t *testing.T) {
-	srv := newServer(1) // burst of 1
+	srv := newServer(1) // one request per second, one-request burst
 	do := func() int {
 		req := httptest.NewRequest("GET", "/v1/find-country?ip=2.22.233.255", nil)
 		rec := httptest.NewRecorder()
@@ -100,8 +100,8 @@ func TestRateLimit429(t *testing.T) {
 }
 
 func TestWrongMethodNotMaskedByRateLimit(t *testing.T) {
-	srv := newServer(1) // burst of 1
-	// Exhaust the limiter with a valid GET.
+	srv := newServer(1) // one request per second, one-request burst
+	// Spend the available token with a valid GET.
 	srv.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/v1/find-country?ip=2.22.233.255", nil))
 
 	// A POST now must still get 405, not the limiter's 429.
@@ -114,7 +114,7 @@ func TestWrongMethodNotMaskedByRateLimit(t *testing.T) {
 
 func TestHealthzNotRateLimited(t *testing.T) {
 	srv := newServer(1)
-	// Exhaust the find-country budget first.
+	// Spend the find-country rate-limit token first.
 	srv.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/v1/find-country?ip=2.22.233.255", nil))
 
 	rec := httptest.NewRecorder()
@@ -188,7 +188,7 @@ func TestMetricsRecorded(t *testing.T) {
 }
 
 func TestMetricsRateLimitRejection(t *testing.T) {
-	d := deps(1) // burst of 1
+	d := deps(1) // one request per second, one-request burst
 	srv := Handler(d)
 
 	srv.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/v1/find-country?ip=2.22.233.255", nil)) // 200

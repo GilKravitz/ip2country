@@ -22,9 +22,8 @@ This is a Go service. Keep changes small, idiomatic, and easy to review.
 
 - Before editing, read the surrounding package and match its style.
 - Prefer surgical changes over broad refactors. If a larger cleanup is needed, explain why before doing it.
-- Use the Karpathy guidelines: make assumptions explicit, keep the solution simple, and verify the result.
 - Run `gofmt` on changed Go files.
-- Validate with `ponytail` when it is available in the environment. If it is not available, use Go-native checks instead:
+- Validate Go-native checks:
   - `go test ./...`
   - `go vet ./...`
   - targeted tests for changed packages

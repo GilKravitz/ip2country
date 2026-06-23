@@ -25,10 +25,9 @@ import (
 
 var baseURL = getenv("BASE_URL", "http://localhost:8080")
 
-// rateWindow is the time it takes the RATE_LIMIT_RPS=1 bucket to refill one
-// token. We wait slightly longer than 1s so each functional test starts with
-// exactly one available token and therefore sees its real status code rather
-// than a 429 left over from a previous test.
+// rateWindow lets the RATE_LIMIT_RPS=1 bucket refill before each functional
+// test, so it sees its real status code rather than a 429 left over from a
+// previous test.
 const rateWindow = 1100 * time.Millisecond
 
 func TestMain(m *testing.M) {
@@ -42,7 +41,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestFindCountry(t *testing.T) {
-	freshToken(t)
+	refillRateLimit(t)
 	status, body := get(t, "/v1/find-country?ip=2.22.233.255")
 	if status != http.StatusOK {
 		t.Fatalf("status = %d, want 200", status)
@@ -53,22 +52,22 @@ func TestFindCountry(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	freshToken(t)
+	refillRateLimit(t)
 	assertError(t, "/v1/find-country?ip=9.9.9.9", http.StatusNotFound, "country not found")
 }
 
 func TestInvalidIP(t *testing.T) {
-	freshToken(t)
+	refillRateLimit(t)
 	assertError(t, "/v1/find-country?ip=999", http.StatusBadRequest, "invalid ip address")
 }
 
 func TestMissingIP(t *testing.T) {
-	freshToken(t)
+	refillRateLimit(t)
 	assertError(t, "/v1/find-country", http.StatusBadRequest, "missing ip parameter")
 }
 
 func TestMethodNotAllowed(t *testing.T) {
-	freshToken(t)
+	refillRateLimit(t)
 	req, _ := http.NewRequest(http.MethodPost, baseURL+"/v1/find-country?ip=8.8.8.8", nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -81,12 +80,12 @@ func TestMethodNotAllowed(t *testing.T) {
 }
 
 func TestRateLimitReturns429(t *testing.T) {
-	freshToken(t) // guarantees exactly one token
+	refillRateLimit(t)
 
 	if status, _ := get(t, "/v1/find-country?ip=8.8.8.8"); status != http.StatusOK {
 		t.Fatalf("first request status = %d, want 200", status)
 	}
-	// Immediately again: the single token is spent, so this must be limited.
+	// Immediately again: the only available token was spent.
 	if status, body := get(t, "/v1/find-country?ip=8.8.8.8"); status != http.StatusTooManyRequests {
 		t.Fatalf("second request status = %d, want 429", status)
 	} else if body["error"] != "rate limit exceeded" {
@@ -111,8 +110,8 @@ func TestMetricsExposed(t *testing.T) {
 }
 
 func TestHealthzBypassesRateLimit(t *testing.T) {
-	// /healthz is exempt, so it answers 200 even with the bucket drained.
-	get(t, "/v1/find-country?ip=8.8.8.8") // drain
+	// /healthz is exempt, so it answers 200 even when the API bucket is empty.
+	get(t, "/v1/find-country?ip=8.8.8.8")
 	resp, err := http.Get(baseURL + "/healthz")
 	if err != nil {
 		t.Fatal(err)
@@ -125,7 +124,7 @@ func TestHealthzBypassesRateLimit(t *testing.T) {
 
 // --- helpers ---
 
-func freshToken(t *testing.T) {
+func refillRateLimit(t *testing.T) {
 	t.Helper()
 	time.Sleep(rateWindow)
 }

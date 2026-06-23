@@ -28,7 +28,7 @@ func TestLoadDefaults(t *testing.T) {
 
 func TestLoadOverrides(t *testing.T) {
 	t.Setenv("LISTEN_ADDR", ":9999")
-	t.Setenv("RATE_LIMIT_RPS", "2.5")
+	t.Setenv("RATE_LIMIT_RPS", "2")
 	t.Setenv("IP2COUNTRY_DB", "csv")
 	t.Setenv("IP2COUNTRY_CSV_PATH", "/tmp/db.csv")
 	t.Setenv("LOG_LEVEL", "debug")
@@ -37,7 +37,7 @@ func TestLoadOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.ListenAddr != ":9999" || cfg.RateLimit != 2.5 || cfg.CSVPath != "/tmp/db.csv" || cfg.LogLevel != slog.LevelDebug {
+	if cfg.ListenAddr != ":9999" || cfg.RateLimit != 2 || cfg.CSVPath != "/tmp/db.csv" || cfg.LogLevel != slog.LevelDebug {
 		t.Errorf("overrides not applied: %+v", cfg)
 	}
 }
@@ -48,6 +48,7 @@ func TestLoadValidation(t *testing.T) {
 		env  map[string]string
 	}{
 		{"non-positive rps", map[string]string{"RATE_LIMIT_RPS": "0", "IP2COUNTRY_CSV_PATH": "x"}},
+		{"fractional rps", map[string]string{"RATE_LIMIT_RPS": "2.5", "IP2COUNTRY_CSV_PATH": "x"}},
 		{"bad rps", map[string]string{"RATE_LIMIT_RPS": "abc", "IP2COUNTRY_CSV_PATH": "x"}},
 		{"bad level", map[string]string{"LOG_LEVEL": "verbose", "IP2COUNTRY_CSV_PATH": "x"}},
 		{"missing csv path", map[string]string{"IP2COUNTRY_DB": "csv"}},

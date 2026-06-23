@@ -16,7 +16,7 @@ import (
 // Config holds the validated runtime configuration.
 type Config struct {
 	ListenAddr string     // address the HTTP server binds to
-	RateLimit  float64    // global allowed requests per second
+	RateLimit  int        // global allowed requests per second
 	DB         string     // active datastore name (selects the geoip.Store)
 	CSVPath    string     // path to the CSV datastore (when DB == "csv")
 	LogLevel   slog.Level // structured-log verbosity
@@ -30,7 +30,7 @@ func Load() (Config, error) {
 		DB:         getenv("IP2COUNTRY_DB", "csv"),
 	}
 
-	rps, err := parseFloat(getenv("RATE_LIMIT_RPS", "100"))
+	rps, err := parseInt(getenv("RATE_LIMIT_RPS", "100"))
 	if err != nil {
 		return Config{}, fmt.Errorf("RATE_LIMIT_RPS: %w", err)
 	}
@@ -62,8 +62,8 @@ func getenv(key, fallback string) string {
 	return fallback
 }
 
-func parseFloat(s string) (float64, error) {
-	return strconv.ParseFloat(strings.TrimSpace(s), 64)
+func parseInt(s string) (int, error) {
+	return strconv.Atoi(strings.TrimSpace(s))
 }
 
 func parseLevel(s string) (slog.Level, error) {
