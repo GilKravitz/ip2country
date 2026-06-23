@@ -24,67 +24,58 @@ func (c *fakeClock) advance(d time.Duration) {
 	c.t = c.t.Add(d)
 }
 
-func TestBurstThenDeny(t *testing.T) {
+func newTestLimiter(rps int) (*Limiter, *fakeClock) {
 	clk := &fakeClock{t: time.Unix(0, 0)}
-	l := newWithClock(3, clk.now)
+	return newWithClock(rps, clk.now), clk
+}
 
-	for i := 0; i < 3; i++ {
+func allow(t *testing.T, l *Limiter, reason string) {
+	t.Helper()
+	if !l.Allow() {
+		t.Fatalf("Allow() = false, expect true: %s", reason)
+	}
+}
+
+func allowNTimes(t *testing.T, l *Limiter, n int, reason string) {
+	t.Helper()
+	for i := 1; i <= n; i++ {
 		if !l.Allow() {
-			t.Fatalf("request %d should be allowed within burst", i)
+			t.Fatalf("Allow() call %d/%d = false, expect true: %s", i, n, reason)
 		}
 	}
+}
+
+func deny(t *testing.T, l *Limiter, reason string) {
+	t.Helper()
 	if l.Allow() {
-		t.Fatal("4th request should be denied once burst is exhausted")
+		t.Fatalf("Allow() = true, expect false: %s", reason)
 	}
 }
 
-func TestRefill(t *testing.T) {
-	clk := &fakeClock{t: time.Unix(0, 0)}
-	l := newWithClock(2, clk.now) // 2 rps
+func TestAllowsOneSecondBurstThenDenies(t *testing.T) {
+	l, _ := newTestLimiter(3)
 
-	if !l.Allow() || !l.Allow() {
-		t.Fatal("first two should pass")
-	}
-	if l.Allow() {
-		t.Fatal("third should be denied")
-	}
-
-	clk.advance(500 * time.Millisecond) // refills 1 token at 2/s
-	if !l.Allow() {
-		t.Fatal("should pass after refill")
-	}
-	if l.Allow() {
-		t.Fatal("only one token refilled; should deny again")
-	}
+	allowNTimes(t, l, 3, "initial one-second burst")
+	deny(t, l, "burst is exhausted")
 }
 
-func TestRefillCappedAtMax(t *testing.T) {
-	clk := &fakeClock{t: time.Unix(0, 0)}
-	l := newWithClock(2, clk.now)
+func TestRefillsProportionallyOverTime(t *testing.T) {
+	l, clk := newTestLimiter(2)
 
-	clk.advance(10 * time.Second) // would add 20 tokens, but capacity is 2
-	if !l.Allow() || !l.Allow() {
-		t.Fatal("two tokens should be available")
-	}
-	if l.Allow() {
-		t.Fatal("bucket must not exceed its capacity")
-	}
+	allowNTimes(t, l, 2, "initial burst at 2 rps")
+	deny(t, l, "initial burst is exhausted")
+
+	clk.advance(500 * time.Millisecond)
+	allow(t, l, "one token refills after half a second at 2 rps")
+	deny(t, l, "only one token should have refilled")
 }
 
-func TestFractionalRateStillAdmits(t *testing.T) {
-	clk := &fakeClock{t: time.Unix(0, 0)}
-	l := newWithClock(0.5, clk.now) // half a request per second
+func TestRefillCappedAtBurst(t *testing.T) {
+	l, clk := newTestLimiter(2)
 
-	if !l.Allow() {
-		t.Fatal("fractional rate must allow the initial burst token")
-	}
-	if l.Allow() {
-		t.Fatal("second request should be denied until refill")
-	}
-	clk.advance(2 * time.Second) // 0.5 rps -> 1 token after 2s
-	if !l.Allow() {
-		t.Fatal("should pass after fractional refill")
-	}
+	clk.advance(10 * time.Second) // would add 20 tokens, but burst is 2
+	allowNTimes(t, l, 2, "bucket refills only to burst size")
+	deny(t, l, "bucket must not exceed its burst")
 }
 
 func TestConcurrentAllowIsRaceFree(t *testing.T) {
