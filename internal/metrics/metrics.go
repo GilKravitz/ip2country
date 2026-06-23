@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -42,7 +43,13 @@ func New() *Metrics {
 			Help: "Total requests rejected with HTTP 429 by the rate limiter.",
 		}),
 	}
-	reg.MustRegister(m.requests, m.duration, m.rateLimited)
+	reg.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		m.requests,
+		m.duration,
+		m.rateLimited,
+	)
 	return m
 }
 

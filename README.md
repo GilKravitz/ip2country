@@ -100,6 +100,30 @@ docker compose up --build
 
 The image includes `testdata/sample.csv` at `/data/sample.csv`. To use another dataset, mount the file and set `IP2COUNTRY_CSV_PATH` in `compose.yaml`.
 
+The Compose stack also starts local observability services:
+
+| URL | Purpose |
+| --- | --- |
+| `http://localhost:3000` | Grafana dashboards and Explore. |
+| `http://localhost:9090` | Prometheus UI and scrape target status. |
+| `http://localhost:3100` | Loki API. |
+| `http://localhost:12345` | Grafana Alloy UI. |
+
+Grafana is provisioned with Prometheus and Loki datasources plus an `ip2country`
+dashboard. Generate sample traffic for the metrics and logs:
+
+```sh
+curl 'http://localhost:8080/v1/find-country?ip=2.22.233.255'
+curl 'http://localhost:8080/v1/find-country?ip=9.9.9.9'
+curl 'http://localhost:8080/v1/find-country?ip=999'
+curl 'http://localhost:8080/metrics'
+```
+
+For local development, Grafana Alloy reads Docker container logs through a
+read-only `/var/run/docker.sock` mount and forwards only the `ip2country`
+container logs to Loki. This is intended for local visualization, not production
+deployment.
+
 ## Validate
 
 ```sh

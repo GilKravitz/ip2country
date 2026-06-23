@@ -14,3 +14,65 @@ services:
     # IP2COUNTRY_CSV_PATH above:
     # volumes:
     #   - ./mydata.csv:/data/mydata.csv:ro
+
+  prometheus:
+    image: prom/prometheus:v3.6.0
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    restart: unless-stopped
+    depends_on:
+      - ip2country
+
+  loki:
+    image: grafana/loki:3.5.5
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./observability/loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    command:
+      - -config.file=/etc/loki/config.yaml
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.10.2
+    ports:
+      - "127.0.0.1:12345:12345"
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    restart: unless-stopped
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+
+volumes:
+  grafana-data:
+  loki-data:
