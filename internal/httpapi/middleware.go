@@ -116,8 +116,7 @@ func logRequests(log *slog.Logger, next http.Handler) http.Handler {
 		log.Info("request",
 			"request_id", requestIDFrom(r.Context()),
 			"method", r.Method,
-			"path", r.URL.Path,
-			"ip", r.URL.Query().Get("ip"),
+			"url", r.URL.RequestURI(),
 			"status", rec.status,
 			"duration", time.Since(start),
 		)
