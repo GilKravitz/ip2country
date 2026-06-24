@@ -9,10 +9,10 @@ import (
 	"testing"
 )
 
-const sample = `1.0.0.0,1.0.0.255,Los Angeles,US
-2.22.233.0,2.22.233.255,London,GB
-8.8.8.0,8.8.8.255,Mountain View,US
-2001:db8::,2001:db8::ffff,Berlin,DE
+const sample = `1.0.0.0/24,Los Angeles,US
+2.22.233.0/24,London,GB
+8.8.8.0/24,Mountain View,US
+2001:db8::/112,Berlin,DE
 `
 
 func loadStore(t *testing.T, data string) Store {
@@ -66,10 +66,8 @@ func TestLookup(t *testing.T) {
 
 func TestLoadErrors(t *testing.T) {
 	tests := map[string]string{
-		"bad start ip":      "999.0.0.0,1.0.0.255,X,US",
-		"bad end ip":        "1.0.0.0,nope,X,US",
-		"wrong field count": "1.0.0.0,1.0.0.255,US",
-		"reversed range":    "1.0.0.255,1.0.0.0,X,US",
+		"bad cidr":          "999.0.0.0/24,X,US",
+		"wrong field count": "1.0.0.0/24,1.0.0.255,X,US",
 		"empty":             "",
 	}
 	for name, data := range tests {
@@ -87,7 +85,7 @@ func TestLoadErrors(t *testing.T) {
 
 func TestParseCSVUnordered(t *testing.T) {
 	// Rows out of order must still resolve correctly after the sort.
-	unordered := "8.8.8.0,8.8.8.255,MV,US\n1.0.0.0,1.0.0.255,LA,US\n"
+	unordered := "8.8.8.0/24,MV,US\n1.0.0.0/24,LA,US\n"
 	s := loadStore(t, unordered)
 	if loc, err := s.Lookup(netip.MustParseAddr("1.0.0.50")); err != nil || loc.Country != "US" {
 		t.Fatalf("loc=%v err=%v", loc, err)
