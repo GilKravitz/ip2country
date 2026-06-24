@@ -34,7 +34,10 @@ func run() error {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
 	slog.SetDefault(log)
 
-	store, err := geoip.New(cfg.DB, cfg.CSVPath)
+	store, err := geoip.New(geoip.Config{
+		DB:      cfg.DB,
+		CSVPath: cfg.CSVPath,
+	})
 	if err != nil {
 		return err
 	}

@@ -28,13 +28,18 @@ type Store interface {
 	Lookup(addr netip.Addr) (Location, error)
 }
 
-// New builds the Store named by db. The csvPath argument is used by the "csv"
-// backend and ignored by others.
-func New(db, csvPath string) (Store, error) {
-	switch db {
+// Config selects and configures the active datastore backend.
+type Config struct {
+	DB      string
+	CSVPath string
+}
+
+// New builds the Store selected by cfg.DB.
+func New(cfg Config) (Store, error) {
+	switch cfg.DB {
 	case "csv":
-		return NewCSVStore(csvPath)
+		return NewCSVStore(cfg.CSVPath)
 	default:
-		return nil, fmt.Errorf("unknown datastore %q", db)
+		return nil, fmt.Errorf("unknown datastore %q", cfg.DB)
 	}
 }

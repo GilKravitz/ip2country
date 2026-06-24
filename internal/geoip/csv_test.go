@@ -93,7 +93,7 @@ func TestParseCSVUnordered(t *testing.T) {
 }
 
 func TestNewUnknownDB(t *testing.T) {
-	if _, err := New("redis", ""); err == nil {
+	if _, err := New(Config{DB: "redis"}); err == nil {
 		t.Error("expected error for unknown db")
 	}
 }
