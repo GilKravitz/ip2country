@@ -70,6 +70,14 @@ Example:
 
 Rows are loaded once at startup. IP ranges are inclusive.
 
+## Adding Another Datastore
+
+Datastore backends plug in through `geoip.Store`:
+
+1. Add a `geoip.Store` implementation under `internal/geoip`.
+2. Return `geoip.ErrNotFound` for missing IPs.
+3. Add one `IP2COUNTRY_DB` selector case in `geoip.New`.
+
 ## Run Locally
 
 ```sh
