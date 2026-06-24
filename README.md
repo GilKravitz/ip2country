@@ -59,16 +59,16 @@ Configuration is read from environment variables at startup.
 The CSV backend expects rows in this format:
 
 ```text
-from,to,City,Country
+cidr,City,Country
 ```
 
 Example:
 
 ```csv
-2.22.233.0,2.22.233.255,London,GB
+2.22.233.0/24,London,GB
 ```
 
-Rows are loaded once at startup. IP ranges are inclusive.
+Rows are loaded once at startup. CIDR ranges are inclusive.
 
 ## Adding Another Datastore
 

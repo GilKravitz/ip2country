@@ -1,4 +1,4 @@
-1.0.0.0,1.0.0.255,Los Angeles,US
-2.22.233.0,2.22.233.255,London,GB
-8.8.8.0,8.8.8.255,Mountain View,US
-2001:db8::,2001:db8::ffff,Berlin,DE
+1.0.0.0/24,Los Angeles,US
+2.22.233.0/24,London,GB
+8.8.8.0/24,Mountain View,US
+2001:db8::/112,Berlin,DE

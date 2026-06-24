@@ -16,7 +16,7 @@ This is a Go service. Keep changes small, idiomatic, and easy to review.
 - Keep configuration centralized in `internal/config`; load environment values once at startup and validate eagerly.
 - Keep HTTP responses aligned with the PRD: successful lookups return `{"country":"...","city":"..."}`, and errors return `{"error":"..."}` with the appropriate status code.
 - Keep rate limiting explicit and testable. Do not use third-party rate-limit libraries or `golang.org/x/time/rate`.
-- Treat CSV input as `from,to,City,Country` rows unless the PRD or tests are updated.
+- Treat CSV input as `cidr,City,Country` rows unless the PRD or tests are updated.
 
 ## Workflow
 
